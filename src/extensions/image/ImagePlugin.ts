@@ -2,7 +2,7 @@ import { Plugin } from '@editor/Plugin'
 import imageAdd from '@icons/image-add-fill.svg'
 import type ExitusEditor from '@src/ExitusEditor'
 
-import { Image, parseImagesToBase64 } from './image'
+import { Image, imageFileToBlobUrl } from './image'
 import './style.css'
 
 export class ImagePlugin extends Plugin {
@@ -35,7 +35,7 @@ export class ImagePlugin extends Plugin {
     inputElement.setAttribute('id', 'editorImagePicker' + editor.editorInstance)
     inputElement.setAttribute('accept', 'image/jpeg,image/png,image/gif,image/bmp,image/webp,image/tiff')
     inputElement.addEventListener('change', function () {
-      parseImagesToBase64(this.files![0], editor)
+      imageFileToBlobUrl(this.files![0], editor)
     })
     inputElement.click()
   }

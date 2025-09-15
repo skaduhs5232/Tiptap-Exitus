@@ -15,8 +15,20 @@ import { type Node } from '@tiptap/pm/model'
 import { NodeSelection } from '@tiptap/pm/state'
 import { type NodeView, type ViewMutationRecord } from '@tiptap/pm/view'
 
-import { convertToBase64 } from './image'
+//import { convertToBase64 } from './image'
 import ResizableImage from './ResizableImage'
+
+async function blobUrlToFile(blobUrl: string, fileName: string) {
+  // Fetch the blob back from the blob URL
+  const response = await fetch(blobUrl)
+  const blob = await response.blob()
+
+  // Convert blob to File
+  return new File([blob], fileName, {
+    type: blob.type,
+    lastModified: Date.now()
+  })
+}
 
 function resetImageClass(imageWrapper: HTMLElement, newClass: string) {
   imageWrapper.className = ''
@@ -186,7 +198,7 @@ export class ImageView implements NodeView {
     node: Node,
     editor: Editor,
     getPos: boolean | (() => number),
-    public proxyUrl: string | undefined
+    public uploadServer: { server: string; ignoreUrlsPrefix?: string[] } | undefined
   ) {
     this.node = node
     this.editor = editor
@@ -211,16 +223,7 @@ export class ImageView implements NodeView {
 
     this.contentDOM = this.figcaption
 
-    const imageUrlRegex = /(https?:\/\/.*\.(?:png|jpg|jpeg|gif|bmp|webp|svg))/i
-
-    if (imageUrlRegex.test(node.attrs.src)) {
-      this.urlToBase64(node.attrs.src)
-    } else {
-      this.image.onload = () => {
-        this.originalSize = this.image.width
-        this.image.onload = null
-      }
-    }
+    this.uploadToMidiaServer(node.attrs.src)
 
     // Adiciona redimensionamento de imagens
     this.resizer = new ResizableImage(this)
@@ -298,15 +301,42 @@ export class ImageView implements NodeView {
     this.balloon.show()
   }
 
-  urlToBase64(url: string) {
-    const image = new Image()
-    image.src = `${this.proxyUrl}/${encodeURIComponent(url)}`
-    image.setAttribute('crossorigin', 'anonymous')
-    image.onload = convertToBase64(image, (base64Url, width) => {
-      this.updateAttributes({ src: base64Url })
-      image.onload = null
-      this.originalSize = width
-    })
+  async uploadToMidiaServer(url: string) {
+    //const imageUrlRegex = /(https?:\/\/.*\.(?:png|jpg|jpeg|gif|bmp|webp|svg))/i
+    if (url.startsWith('blob:')) {
+      const imageFile = await blobUrlToFile(url, 'upload.png')
+
+      const formData = new FormData()
+      formData.append('file', imageFile)
+
+      this.imageWrapper.classList.add('ex-image-uploading')
+
+      fetch(`${this.uploadServer?.server}`, {
+        method: 'POST',
+        body: formData
+      })
+        .then(res => res.json())
+        .then(data => {
+          this.imageWrapper.classList.remove('ex-image-uploading')
+          this.updateAttributes({ src: data.url })
+        })
+
+      return
+    }
+
+    if (!this.uploadServer?.ignoreUrlsPrefix?.some(prefix => url.startsWith(prefix)) && !url.startsWith('data:image')) {
+      this.imageWrapper.classList.add('ex-image-uploading')
+      fetch(`${this.uploadServer?.server}?url=${encodeURIComponent(url)}`, {
+        method: 'GET'
+      })
+        .then(res => res.json())
+        .then(data => {
+          this.imageWrapper.classList.remove('ex-image-uploading')
+          this.updateAttributes({ src: data.url })
+        })
+
+      return
+    }
   }
 
   ignoreMutation(mutation: ViewMutationRecord) {

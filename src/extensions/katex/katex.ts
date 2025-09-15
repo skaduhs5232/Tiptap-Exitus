@@ -124,7 +124,8 @@ export const Katex = Node.create<KatexOptions>({
     normalizeLatex(this.editor.view)
   },
 
-  onTransaction({ editor }) {
+  onTransaction({ editor, transaction }) {
+    if (transaction.getMeta('normalizeLatex')) return
     this.options.debounceFn(editor)
   }
 })
@@ -155,6 +156,7 @@ function normalizeLatex(view: EditorView) {
   }
 
   if (tr.docChanged) {
+    tr.setMeta('normalizeLatex', true)
     dispatch(tr)
   }
 }

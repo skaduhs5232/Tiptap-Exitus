@@ -50,11 +50,21 @@ export function parseImagesToBase64(img: File, editor: Editor) {
   }
 }
 
+export function imageFileToBlobUrl(img: File, editor: Editor) {
+  if (img) {
+    editor
+      .chain()
+      .focus()
+      .setImage({ src: URL.createObjectURL(img) })
+      .run()
+  }
+}
+
 export interface ImageOptions {
   inline: boolean
   allowBase64: boolean
   HTMLAttributes: Record<string, any>
-  proxyUrl: string | undefined
+  uploadServer: { server: string; ignoreUrlsPrefix?: string[] } | undefined
 }
 
 declare module '@tiptap/core' {
@@ -75,7 +85,7 @@ export const Image = Node.create<ImageOptions>({
       inline: false,
       allowBase64: false,
       HTMLAttributes: {},
-      proxyUrl: undefined
+      uploadServer: undefined
     }
   },
 
@@ -194,7 +204,7 @@ export const Image = Node.create<ImageOptions>({
   },
   addNodeView() {
     return ({ node, editor, getPos }) => {
-      return new ImageView(node, editor, getPos, this.options.proxyUrl)
+      return new ImageView(node, editor, getPos, this.options.uploadServer)
     }
   },
   addProseMirrorPlugins() {
@@ -203,23 +213,46 @@ export const Image = Node.create<ImageOptions>({
       new Plugin({
         key: new PluginKey('eventHandler'),
         props: {
-          handleDOMEvents: {
-            drop: (_view, event) => {
-              const hasFiles = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length
-
-              if (hasFiles) {
-                const images = Array.from(event.dataTransfer?.files ?? []).filter(file => /image/i.test(file.type))
-
-                if (images.length === 0) {
-                  return false
-                }
-                images.forEach(image => parseImagesToBase64(image, self.editor))
-
-                event.preventDefault()
-                return true
-              }
+          handlePaste: (_view, event) => {
+            if (!(event.clipboardData && event.clipboardData.files.length)) {
               return false
             }
+
+            const images = Array.from(event.clipboardData.files).filter(file => /image/i.test(file.type))
+
+            if (images.length === 0) {
+              return false
+            }
+
+            if (this.options.uploadServer) {
+              images.forEach(image => imageFileToBlobUrl(image, self.editor))
+            } else {
+              images.forEach(image => parseImagesToBase64(image, self.editor))
+            }
+
+            event.preventDefault()
+            return true
+          },
+          handleDrop: (_view, event, _slice, _moved) => {
+            const hasFiles = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length
+
+            if (hasFiles) {
+              const images = Array.from(event.dataTransfer?.files ?? []).filter(file => /image/i.test(file.type))
+
+              if (images.length === 0) {
+                return false
+              }
+
+              if (this.options.uploadServer) {
+                images.forEach(image => imageFileToBlobUrl(image, self.editor))
+              } else {
+                images.forEach(image => parseImagesToBase64(image, self.editor))
+              }
+
+              event.preventDefault()
+              return true
+            }
+            return false
           }
         }
       })

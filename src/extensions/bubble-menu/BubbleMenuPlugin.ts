@@ -2,12 +2,8 @@ import { Plugin } from '@editor/Plugin'
 import { Toolbar } from '@editor/toolbar/Toolbar'
 import { Button } from '@editor/ui'
 import type ExitusEditor from '@src/ExitusEditor'
-import { Katex } from '@src/extensions/katex'
 import './bubbleMenu.css'
-import Bold from '@tiptap/extension-bold'
 import BubbleMenu from '@tiptap/extension-bubble-menu'
-import Italic from '@tiptap/extension-italic'
-import Strike from '@tiptap/extension-strike'
 
 export class BubbleMenuPlugin extends Plugin {
   static get pluginName() {
@@ -34,7 +30,7 @@ export class BubbleMenuPlugin extends Plugin {
       }
     })
 
-    return [Bold, Italic, Strike, Katex, bubble]
+    return [bubble]
   }
 
   init(): void {
@@ -74,6 +70,18 @@ export class BubbleMenuPlugin extends Plugin {
       el.innerHTML = ''
       el.appendChild(this.toolbar.render())
     }
+  }
+
+  destroy(): void {
+    const editor = this.editor as ExitusEditor
+    const bubbleExt: any = (editor as any).extensionManager.extensions.find((e: any) => e.name === 'bubbleMenu')
+    const el: HTMLElement | null = bubbleExt?.options?.element ?? null
+    if (el) {
+      // Remove qualquer conteúdo injetado pelo plugin (toolbar, etc.)
+      el.innerHTML = ''
+    }
+    // Libera referência à toolbar para GC
+    ;(this as any).toolbar = undefined
   }
 }
 

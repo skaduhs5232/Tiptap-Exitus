@@ -6,6 +6,14 @@ import { type AnyExtension, Editor, type EditorOptions } from '@tiptap/core'
 interface Config {
   [key: string]: any
   initialHeight?: number
+  /**
+   * Define a largura mínima e máxima do editor.
+   * Aceita número (px) ou string com unidade (ex: '50%', '640px').
+   */
+  editorWidth?: {
+    min?: number | string
+    max?: number | string
+  }
 }
 
 export interface ExitusEditorOptions extends EditorOptions {
@@ -47,6 +55,7 @@ class ExitusEditor extends Editor {
   toolbar: Toolbar
   toolbarItemsDiv!: HTMLDivElement
   editorMainDiv!: HTMLDivElement
+  private editorShellDiv!: HTMLDivElement
   private pluginsInstances = new Map<string, Plugin>()
   static extensions: AnyExtension[]
   static plugins: PluginClassConstructor[]
@@ -54,6 +63,8 @@ class ExitusEditor extends Editor {
   private container: Element
   private config?: Config
   private _eventBus: EventBus
+  private _handleDocumentPointer?: (e: Event) => void
+  private _showToolbar?: () => void
   constructor(options: Partial<ExitusEditorOptions>) {
     if (!options.container) {
       throw new Error('Invalid Container Element !!')
@@ -80,7 +91,6 @@ class ExitusEditor extends Editor {
 
   private initializePlugins(options: Partial<ExitusEditorOptions>) {
     ExitusEditor.plugins.forEach(plugin => {
-      console.log(options.config)
       const config = options.config?.[plugin.pluginName]
       const pluginInstance = new plugin(this, config)
       pluginInstance.init()
@@ -94,6 +104,7 @@ class ExitusEditor extends Editor {
 
   private _generateEditorUI() {
     const toolbarItemsDiv = this.toolbar.render()
+
     const toolbarEditor = createHTMLElement('div', { class: 'ex-toolbar-editor' }, [toolbarItemsDiv])
 
     const editorMain = this.options.element
@@ -110,7 +121,41 @@ class ExitusEditor extends Editor {
 
     const editorShell = createHTMLElement('div', { class: 'editor-shell' }, [toolbarEditor, editorScroller])
 
+    const widthCfg = this.config?.editorWidth
+    if (widthCfg) {
+      const toCss = (v?: number | string) => (typeof v === 'number' ? `${v}px` : v)
+      const minW = toCss(widthCfg.min)
+      const maxW = toCss(widthCfg.max)
+      if (minW) (editorShell as HTMLDivElement).style.minWidth = minW
+      if (maxW) (editorShell as HTMLDivElement).style.maxWidth = maxW
+    }
+    this.editorShellDiv = editorShell as HTMLDivElement
+
     this.toolbarItemsDiv = toolbarItemsDiv
+
+    if (this.config?.toolbar && this.config?.toolbar.showOnFocus) {
+      this.toolbarItemsDiv.style.display = 'none'
+      this._showToolbar = () => {
+        this.toolbarItemsDiv.style.display = 'flex'
+      }
+
+      this.on('focus', this._showToolbar)
+
+      this._handleDocumentPointer = (e: Event) => {
+        const target = e.target as Node | null
+        if (!target) return
+
+        const inside = this.editorShellDiv.contains(target)
+
+        if (inside) {
+          this._showToolbar?.()
+        } else {
+          this.toolbarItemsDiv.style.display = 'none'
+        }
+      }
+
+      document.addEventListener('pointerdown', this._handleDocumentPointer)
+    }
 
     return editorShell
   }
@@ -129,10 +174,22 @@ class ExitusEditor extends Editor {
   }
 
   destroy(): void {
+    if (this._handleDocumentPointer) {
+      document.removeEventListener('pointerdown', this._handleDocumentPointer)
+      this._handleDocumentPointer = undefined
+    }
+    if (this._showToolbar) {
+      this.off('focus', this._showToolbar)
+      this._showToolbar = undefined
+    }
     this.pluginsInstances.forEach(plugin => plugin.destroy())
     this.pluginsInstances.clear()
     super.destroy()
     this.container.innerHTML = ''
+
+    this.toolbarItemsDiv = undefined as unknown as HTMLDivElement
+    this.editorShellDiv = undefined as unknown as HTMLDivElement
+    this.editorMainDiv = undefined as unknown as HTMLDivElement
   }
 }
 

@@ -13,7 +13,6 @@ import { IndentPlugin } from './extensions/indent/IndentPlugin'
 import { ItalicPlugin } from './extensions/italic/ItalicPlugin'
 import { KatexPlugin } from './extensions/katex/KatexPlugin'
 import { ListItemPlugin } from './extensions/listitem/ListItemPlugin'
-import { MathTypePlugin } from './extensions/mathtype/MathTypePlugin'
 import { StrikePlugin } from './extensions/strike/StrikePlugin'
 import { SubscriptPlugin } from './extensions/subscript/SubscriptPlugin'
 import { SuperscriptPlugin } from './extensions/superscript/SuperscriptPlugin'
@@ -33,7 +32,6 @@ ExitusEditor.plugins = [
   SuperscriptPlugin,
   TablePlugin,
   TextAlignPlugin,
-  MathTypePlugin,
   ImagePlugin,
   BlockquotePlugin,
   HistoryPlugin,
@@ -66,9 +64,7 @@ ExitusEditor.toolbarOrder = [
   'rmRecuo',
   'addRecuo',
   '|',
-  'katex',
-  'mathtype',
-  'chemtype'
+  'katex'
 ]
 
 // Remove a toolbar fixa. Mantemos a ordem somente para reutilizar ferramentas na criação do bubble.
