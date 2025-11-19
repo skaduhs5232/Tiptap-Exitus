@@ -8,6 +8,7 @@ import textDl from '@icons/image-left.svg'
 import textDm from '@icons/image-middle.svg'
 import textDr from '@icons/image-right.svg'
 import imgSize from '@icons/image-size.svg'
+import pallet from '@icons/palette.svg'
 import type ExitusEditor from '@src/ExitusEditor'
 import { type Editor } from '@tiptap/core'
 import { type Node as ProseMirrorNode } from '@tiptap/pm/model'
@@ -31,8 +32,12 @@ async function blobUrlToFile(blobUrl: string, fileName: string) {
 }
 
 function resetImageClass(imageWrapper: HTMLElement, newClass: string) {
+  const hadGray = imageWrapper.classList.contains('ex-image-grayscale')
   imageWrapper.className = ''
   imageWrapper.classList.add('ex-image-wrapper', 'tiptap-widget', newClass)
+  if (hadGray) {
+    imageWrapper.classList.add('ex-image-grayscale')
+  }
 }
 
 function alinhaDireita(imageView: ImageView) {
@@ -181,6 +186,22 @@ function showDropdownAlinnhamentoTexto({ event, dropdown }: DropDownEventProps) 
     dropdown.on()
   }
 }
+
+function colorToggle(imageView: ImageView) {
+  return ({ button }: ButtonEventProps) => {
+    const { imageWrapper } = imageView
+    if (imageWrapper.classList.contains('ex-image-grayscale')) {
+      imageWrapper.classList.remove('ex-image-grayscale')
+      button.on()
+    } else {
+      imageWrapper.classList.add('ex-image-grayscale')
+      button.off()
+    }
+    imageView.updateAttributes({
+      classes: imageWrapper.className
+    })
+  }
+}
 export class ImageView implements NodeView {
   node: Node
   dom: Element
@@ -207,6 +228,8 @@ export class ImageView implements NodeView {
     this.imageWrapper = document.createElement('figure')
     this.imageWrapper.draggable = true
     this.imageWrapper.className = node.attrs.classes
+    // aplicar grayscale por padrão
+    this.imageWrapper.classList.add('ex-image-grayscale')
 
     this.image = this.imageWrapper.appendChild(document.createElement('img'))
     this.setImageAttributes(this.image, node)
@@ -370,7 +393,8 @@ export class ImageView implements NodeView {
       'alinhaMeio',
       'alinhaDireita',
       'tamanhoImg',
-      'alinhamentoTexto'
+      'alinhamentoTexto',
+      'colorirImagem'
     ])
     toolbar.setButton('adicionarLegenda', {
       icon: imgCaption,
@@ -418,6 +442,11 @@ export class ImageView implements NodeView {
         return criarDropDownAlinhamentoTexto(dropdown, this)
       }
     )
+    toolbar.setButton('colorirImagem', {
+      icon: pallet,
+      click: colorToggle(this),
+      tooltip: 'Colorir/descolorir imagem'
+    })
 
     return toolbar
   }

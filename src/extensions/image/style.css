@@ -246,3 +246,10 @@
 .ex-delete-size {
   display: none;
 }
+
+.ex-image-wrapper img {
+  transition: filter 0.2s ease;
+}
+.ex-image-wrapper.ex-image-grayscale img {
+  filter: grayscale(100%);
+}
