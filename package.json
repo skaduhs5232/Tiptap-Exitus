@@ -69,6 +69,8 @@
     "@tiptap/pm": "^2.11.0",
     "@wiris/mathtype-html-integration-devkit": "^1.17.5",
     "katex": "^0.16.11",
-    "ngx-tiptap": "^12.0.0"
+    "ngx-tiptap": "^12.0.0",
+    "unicode-data": "^0.1.0",
+    "unicode-symbols": "^7.6.0"
   }
 }
