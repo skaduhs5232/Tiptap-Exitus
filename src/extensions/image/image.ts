@@ -78,6 +78,12 @@ declare module '@tiptap/core' {
 
 export const inputRegex = /(?:^|\s)(!\[(.+|:?)]\((\S+)(?:(?:\s+)["'](\S+)["'])?\))$/
 
+const alignClasses = ['ex-image-block-align-left', 'ex-image-block-align-right', 'ex-image-block-middle']
+
+const allowedClasses = ['ex-image-wrapper', ...alignClasses, 'ex-image-grayscale', 'ex-image-float-left', 'ex-image-float-right']
+
+const defaultClasses = ['ex-image-wrapper', 'ex-image-block-middle', 'tiptap-widget']
+
 export const Image = Node.create<ImageOptions>({
   name: 'image',
 
@@ -110,9 +116,6 @@ export const Image = Node.create<ImageOptions>({
   defining: true,
 
   addAttributes() {
-    const baseClasses = 'ex-image-wrapper ex-image-block-middle tiptap-widget'
-    const defaultClasses = this.options.imgColorida ? baseClasses : `${baseClasses} ex-image-grayscale`
-
     return {
       src: {
         default: null
@@ -124,7 +127,7 @@ export const Image = Node.create<ImageOptions>({
         default: null
       },
       classes: {
-        default: defaultClasses
+        default: defaultClasses.join(' ')
       },
       style: {
         default: '',
@@ -151,18 +154,25 @@ export const Image = Node.create<ImageOptions>({
         tag: this.options.allowBase64 ? 'img[src]' : 'img[src]:not([src^="data:"])',
         getAttrs: node => {
           const parent = node.parentElement as HTMLElement
-          const imageUrlRegex = /(https?:\/\/.*\.(?:png|jpg|jpeg|gif|bmp|webp|svg))/i
-          const isBase64Url = /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(node.getAttribute('src') as string)
-          const isUrlImage = imageUrlRegex.test(node.getAttribute('src') as string)
 
-          if (parent.classList.contains('ex-image-wrapper') || parent.tagName.toLocaleLowerCase() == 'figure' || isUrlImage || isBase64Url) {
-            const parentClasses = parent.className
-            if (parentClasses && (parent.classList.contains('ex-image-wrapper') || parent.tagName.toLocaleLowerCase() == 'figure')) {
-              return { classes: parentClasses }
+          if (parent.classList.contains('ex-image-wrapper') || parent.tagName.toLocaleLowerCase() == 'figure') {
+            if (parent.getAttribute('class')) {
+              const parentClasses = parent.getAttribute('class')!.split(' ')
+              const filteredClasses = parentClasses.filter(cls => allowedClasses.includes(cls))
+
+              if (filteredClasses.some(cls => alignClasses.includes(cls)) === false) {
+                filteredClasses.push('ex-image-block-middle')
+              }
+
+              return {
+                classes: Array.from(new Set(['ex-image-wrapper', 'tiptap-widget', ...filteredClasses])).join(' ')
+              }
+            } else {
+              return null
             }
+          } else {
             return null
           }
-          return false
         },
         getContent: (node, schema) => {
           const figcaption = (node.parentElement as HTMLElement).querySelector('figcaption')
