@@ -40,6 +40,10 @@
     0 0;
 }
 
+.ProseMirror p>br:first-child:has(+ br.ProseMirror-trailingBreak) {
+  display: none !important;
+}
+
 .tiptap {
   word-wrap: break-word;
   white-space: normal !important;
