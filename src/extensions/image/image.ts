@@ -111,10 +111,6 @@ export const Image = Node.create<ImageOptions>({
 
   draggable: true,
 
-  isolating: true,
-
-  defining: true,
-
   addAttributes() {
     return {
       src: {
@@ -130,7 +126,7 @@ export const Image = Node.create<ImageOptions>({
         default: defaultClasses.join(' ')
       },
       style: {
-        default: '',
+        default: `width: 300px`,
         parseHTML: element => {
           const parent = element!.parentNode as HTMLElement
           if (

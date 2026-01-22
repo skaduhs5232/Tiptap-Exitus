@@ -11,7 +11,7 @@ import textDr from '@icons/image-right.svg'
 import imgSize from '@icons/image-size.svg'
 import pallet from '@icons/palette.svg'
 import type ExitusEditor from '@src/ExitusEditor'
-import { type Editor } from '@tiptap/core'
+import { findParentNode, type Editor } from '@tiptap/core'
 import { type Node as ProseMirrorNode } from '@tiptap/pm/model'
 import { type Node } from '@tiptap/pm/model'
 import { NodeSelection } from '@tiptap/pm/state'
@@ -275,6 +275,30 @@ export class ImageView implements NodeView {
 
     this.imageWrapper.appendChild(this.balloon.getBalloon())
 
+    // Insert Paragraph Before button
+    const insertBeforeBtn = document.createElement('div')
+    insertBeforeBtn.classList.add('insert-paragraph-btn', 'insert-paragraph-before')
+    insertBeforeBtn.innerHTML =
+      '<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M11 9l1.42 1.42L8.83 14H18V7h2v9H8.83l3.59 3.58L11 21l-6-6 6-6z"/></svg>'
+    insertBeforeBtn.title = 'Insert paragraph before'
+    insertBeforeBtn.addEventListener('click', e => {
+      e.stopPropagation()
+      this.insertParagraph('before')
+    })
+    this.imageWrapper.appendChild(insertBeforeBtn)
+
+    // Insert Paragraph After button
+    const insertAfterBtn = document.createElement('div')
+    insertAfterBtn.classList.add('insert-paragraph-btn', 'insert-paragraph-after')
+    insertAfterBtn.innerHTML =
+      '<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M11 9l1.42 1.42L8.83 14H18V7h2v9H8.83l3.59 3.58L11 21l-6-6 6-6z"/></svg>'
+    insertAfterBtn.title = 'Insert paragraph after'
+    insertAfterBtn.addEventListener('click', e => {
+      e.stopPropagation()
+      this.insertParagraph('after')
+    })
+    this.imageWrapper.appendChild(insertAfterBtn)
+
     this.imageClickHandler()
 
     this.dom = this.imageWrapper
@@ -476,5 +500,24 @@ export class ImageView implements NodeView {
     })
 
     return toolbar
+  }
+
+  insertParagraph(where: 'before' | 'after') {
+    if (typeof this.getPos !== 'function') return
+
+    const paragraph = findParentNode(node => node.type.name === 'paragraph')(this.editor.state.selection)
+
+    if (paragraph === undefined) return
+
+    const insertionPos = where === 'before' ? paragraph.pos : paragraph.pos + this.node.nodeSize
+
+    this.editor.commands.insertContentAt(insertionPos, { type: 'paragraph' })
+
+    // Focus the new paragraph
+    if (where === 'before') {
+      this.editor.commands.focus(insertionPos)
+    } else {
+      this.editor.commands.focus(insertionPos + 1)
+    }
   }
 }
