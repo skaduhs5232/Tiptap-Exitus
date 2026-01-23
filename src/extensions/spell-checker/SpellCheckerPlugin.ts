@@ -36,7 +36,7 @@ export class SpellCheckerPlugin extends Plugin {
     // Inicializa o SpellChecker
     this.spellChecker = new SpellChecker({
       apiUrl: this.config.apiUrl,
-      debounceMs: typeof this.config.debounceMs === 'number' ? this.config.debounceMs : 300,
+      debounceMs: typeof this.config.debounceMs === 'number' ? this.config.debounceMs : 500,
       minWordLength: typeof this.config.minWordLength === 'number' ? this.config.minWordLength : 3
     })
 
@@ -58,11 +58,6 @@ export class SpellCheckerPlugin extends Plugin {
     this.editor.on('update', () => {
       this.scheduleSpellCheck()
     })
-
-    // Verifica o conteúdo inicial após um pequeno delay
-    setTimeout(() => {
-      this.scheduleSpellCheck()
-    }, 500)
   }
 
   private registerProseMirrorPlugin() {
