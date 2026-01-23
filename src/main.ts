@@ -14,6 +14,7 @@ import { KatexPlugin } from './extensions/katex/KatexPlugin'
 import { ListItemPlugin } from './extensions/listitem/ListItemPlugin'
 import { MathTypePlugin } from './extensions/mathtype/MathTypePlugin'
 import { SpecialCharactersPlugin } from './extensions/special-characters/SpecialCharactersPlugin'
+import { SpellCheckerPlugin } from './extensions/spell-checker/SpellCheckerPlugin'
 import { StrikePlugin } from './extensions/strike/StrikePlugin'
 import { SubscriptPlugin } from './extensions/subscript/SubscriptPlugin'
 import { SuperscriptPlugin } from './extensions/superscript/SuperscriptPlugin'
@@ -42,7 +43,8 @@ ExitusEditor.plugins = [
   IndentPlugin,
   ColarQuestaoPlugin,
   FormatClear,
-  SpecialCharactersPlugin
+  SpecialCharactersPlugin,
+  SpellCheckerPlugin
 ]
 
 ExitusEditor.toolbarOrder = [
