@@ -488,3 +488,12 @@
 figure+br.ProseMirror-trailingBreak {
   display: none;
 }
+/* hide empty <p> BEFORE a <p> that contains a figure */
+p:has(> br):has(+ p > figure) {
+  display: none;
+}
+
+/* hide empty <p> AFTER a <p> that contains a figure */
+p:has(> figure) + p:has(> br) {
+  display: none;
+}

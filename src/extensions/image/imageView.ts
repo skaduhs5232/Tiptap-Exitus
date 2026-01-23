@@ -11,11 +11,12 @@ import textDr from '@icons/image-right.svg'
 import imgSize from '@icons/image-size.svg'
 import pallet from '@icons/palette.svg'
 import type ExitusEditor from '@src/ExitusEditor'
-import { findParentNode, type Editor } from '@tiptap/core'
+import { findParentNodeClosestToPos, type Editor } from '@tiptap/core'
 import { type Node as ProseMirrorNode } from '@tiptap/pm/model'
 import { type Node } from '@tiptap/pm/model'
 import { NodeSelection } from '@tiptap/pm/state'
 import { type NodeView, type ViewMutationRecord } from '@tiptap/pm/view'
+import { TextSelection } from 'prosemirror-state'
 
 import ImageCropper from './ImageCropper'
 import ResizableImage from './ResizableImage'
@@ -390,7 +391,7 @@ export class ImageView implements NodeView {
       return
     }
 
-    if (!this.uploadServer?.ignoreUrlsPrefix?.some(prefix => url.startsWith(prefix)) && !url.startsWith('data:image')) {
+    if (this.uploadServer && !this.uploadServer?.ignoreUrlsPrefix?.some(prefix => url.startsWith(prefix)) && !url.startsWith('data:image')) {
       this.imageWrapper.classList.add('ex-image-uploading')
       fetch(`${this.uploadServer?.server}?url=${encodeURIComponent(url)}`, {
         method: 'GET'
@@ -505,19 +506,28 @@ export class ImageView implements NodeView {
   insertParagraph(where: 'before' | 'after') {
     if (typeof this.getPos !== 'function') return
 
-    const paragraph = findParentNode(node => node.type.name === 'paragraph')(this.editor.state.selection)
+    const { state, view } = this.editor
+    const pos = this.getPos()
 
-    if (paragraph === undefined) return
+    const $pos = state.doc.resolve(pos)
 
-    const insertionPos = where === 'before' ? paragraph.pos : paragraph.pos + this.node.nodeSize
+    const paragraphParent = findParentNodeClosestToPos($pos, node => node.type.name === 'paragraph')
 
-    this.editor.commands.insertContentAt(insertionPos, { type: 'paragraph' })
+    if (!paragraphParent) return
 
-    // Focus the new paragraph
-    if (where === 'before') {
-      this.editor.commands.focus(insertionPos)
-    } else {
-      this.editor.commands.focus(insertionPos + 1)
-    }
+    const insertPos = where === 'before' ? paragraphParent.pos : paragraphParent.pos + paragraphParent.node.nodeSize
+
+    const paragraph = state.schema.nodes.paragraph.createAndFill()
+    if (!paragraph) return
+
+    let tr = state.tr.insert(insertPos, paragraph)
+
+    // 🔑 ALWAYS move INSIDE the inserted paragraph
+    const cursorPos = tr.mapping.map(insertPos + 1)
+
+    tr = tr.setSelection(TextSelection.create(tr.doc, cursorPos))
+
+    view.dispatch(tr)
+    view.focus()
   }
 }
